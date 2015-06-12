@@ -1,6 +1,11 @@
 apply plugin:"java"
 apply plugin:"eclipse"
 
+group = "com.piedra"
+archivesBaseName = "excelExportor"
+version = "1.0.0-SNAPSHOP"
+
+
 repositories{
 	mavenCentral()
 }
