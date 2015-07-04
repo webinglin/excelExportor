@@ -1,7 +1,7 @@
 # ExcelExportor
 Excel导出工具项目
 
-备注：此master版本为主要的版本，新功能的开发都将在superExcel这个分支上进行，因此，要使用或者参与开发，建议clone分支版本（superExcel）
+**备注：此master版本为主要的版本，新功能的开发都将在superExcel这个分支上进行，因此，要使用或者参与开发，建议clone分支版本（superExcel）**
 
 ## 导出工具项目概述
 1. 对于要导出的实体类，必须用JAVABEAN的形式表示.  
