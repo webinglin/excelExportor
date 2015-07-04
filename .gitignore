@@ -3,3 +3,8 @@
 /.settings
 /.classpath
 /.project
+/*.iml
+/*.ipr
+/*.iws
+/out
+/.idea

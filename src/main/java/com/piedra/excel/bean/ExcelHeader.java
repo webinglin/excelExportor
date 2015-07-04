@@ -1,8 +1,8 @@
 package com.piedra.excel.bean;
 
 /**
- * @Description: Excel导出表格的头部信息
- * @Creator：linwb 2014-12-20
+ * Excel导出表格的头部信息
+ * @author：linwb 2014-12-20
  */
 public class ExcelHeader {
     /** 表头的文字描述*/
@@ -18,7 +18,8 @@ public class ExcelHeader {
     
     public ExcelHeader(){
     }
-    
+
+
     public ExcelHeader(String[] headerArr, String[] rowspanArr, String[] colspanArr, int columnWidth, String datePattern){
         this.headerArr = headerArr;
         this.rowspanArr = rowspanArr;

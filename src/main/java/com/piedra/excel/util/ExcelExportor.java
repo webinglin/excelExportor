@@ -92,75 +92,84 @@ public class ExcelExportor<T> {
     
     public ExcelExportor(){
     }
-    
-    
+
+
     /**
-     * 通用的excel导出方法<br>
+     * Excel导出方法，可以指定此次导出可以导出几个Sheet表格，并且Sheet表格的名称就是Map的key
+     *
      * 注：<br>
      * 1. 当前版本不支持 boolean类型,byte[]类型  这些类型的请自己转成String或者int类型然后用 @ExcelExport 标记为要导出的字段<br>
      * 2. 每次要导出多少行,由开发者自行设定,此处不做限定; 但是每5000条数据的时候,将创建多个sheet表格<br>
      * 3. 如果要获取导出失败的数据,通过getErrorDatas()来获取<br>
-     * 
-     * @param headers   表格属性列名数组
-     * @param dataset   需要显示的数据集合,集合里面的元素必须是JavaBean, 然后对于要导出的列 用 @ExcelExport annotation标记; 具体注解的使用,参照注解类的说明
-     * @param out       与输出设备关联的流对象，可以将EXCEL文档导出到本地文件或者网络中
      *
+     * OutputStream就是要导出的输出流
+     * @param dataSetMap   要导出的Sheet表格数及对应的数据集  对于要导出的列 用 @ExcelExport annotation标记; 具体注解的使用,参照注解类的说明
+     * @param out           与输出设备关联的流对象，可以将EXCEL文档导出到本地文件或者网络中
      * @return Map&lt;Key, Msg&gt; <br>
-     *             Key--表示成功与否的类型      Constants.SUCCESS_CODE 成功;     Constants.ERROR_CODE 错误;<br>
-     *             Msg--表示成功或者失败的原因，为什么从该方法返回<br>
-     * @History
-     *     1. 2014-12-19 linwb 创建方法
+     *          Key--表示成功与否的类型      Constants.SUCCESS_CODE 成功;     Constants.ERROR_CODE 错误;<br>
+     *          Msg--表示成功或者失败的原因，为什么从该方法返回<br>
+     * @since 2015-07-04
+     * @author linwenbin
+     *
      */
-    public Map<String,String> exportExcel(String title, List<T> dataset, OutputStream out) {
+    public Map<String,String> exportExcel(Map<String,List<T>> dataSetMap, OutputStream out){
         Map<String,String> map = new HashMap<String,String>();
         if(out==null){
             map.put(Constants.ERROR_CODE, "输出流为空,无法继续执行操作.");
             return map;
         }
-        if(dataset==null || dataset.size()==0){
+        if(dataSetMap==null || dataSetMap.keySet().size()==0){
             map.put(Constants.ERROR_CODE, "没有任何要导出的数据,无法执行导出操作.");
             return map;
         }
-        if(StringUtils.isBlank(title)){
-            title = "通用excel导出工具";
-        }
-        
+
         //每一次要开始导出操作,清空errorDatas
         errorDatas.clear();
-        
-        //当前要导出的数据对象类型
-        T beanType = (T) dataset.get(0);
-        
+
         //1. 声明一个工作薄
         HSSFWorkbook workbook = new HSSFWorkbook();
-        
-        //2. 生成一个表格
-        int sheets = 1;
-        int dataSize = dataset.size();
-        if(dataSize>maxSheetRows){
-            sheets = (dataSize%maxSheetRows==0)?(dataSize/maxSheetRows):(dataSize/maxSheetRows+1);
-        }
-        
-        //如果数据量太多生成多个表格
-        int minIndex = 0,maxIndex=0;
-        for(int i=0; i<sheets; i++){
-            HSSFSheet sheet = workbook.createSheet(title+(i==0?"":""+i));
-            
-            //3. 生成表头
-            int maxRows = generateHeader(workbook, sheet, beanType);
-            //4. 将数据集的每一个数据项写到excel的每一行
-            minIndex = i*maxSheetRows;
-            if(dataSize/((i+1)*maxSheetRows) > 0){
-                maxIndex = (i+1)*maxSheetRows;
-            } else {
-                maxIndex = dataSize;
+
+        int index = 0;
+        for(Map.Entry<String,List<T>> entry : dataSetMap.entrySet()) {
+            index ++;
+            String sheetName = StringUtils.isEmpty(entry.getKey()) ? ("Sheet" + index) : entry.getKey();
+
+            List<T> dataSet = entry.getValue();
+            if(dataSet == null || dataSet.size()==0){
+                logger.error("表格: {} 没有可以导出的数据",sheetName);
+                continue;
             }
-            
-            List<T> dataRows = dataset.subList(minIndex, maxIndex);
-            exportRowDatas(dataRows, workbook, sheet, maxRows);
+
+            T beanType = (T) dataSet.get(0);
+
+            //2. 生成一个表格
+            int sheets = 1;
+            int dataSize = dataSet.size();
+            if(dataSize>maxSheetRows){
+                sheets = (dataSize%maxSheetRows==0)?(dataSize/maxSheetRows):(dataSize/maxSheetRows+1);
+            }
+
+            //如果数据量太多生成多个表格
+            int minIndex = 0,maxIndex=0;
+            for(int i=0; i<sheets; i++){
+                HSSFSheet sheet = workbook.createSheet(sheetName + (i==0?"":""+i));
+
+                //3. 生成表头
+                int headerRows = generateHeader(workbook, sheet, beanType);
+                //4. 将数据集的每一个数据项写到excel的每一行
+                minIndex = i*maxSheetRows;
+                if(dataSize/((i+1)*maxSheetRows) > 0){
+                    maxIndex = (i+1)*maxSheetRows;
+                } else {
+                    maxIndex = dataSize;
+                }
+
+                List<T> dataRows = dataSet.subList(minIndex, maxIndex);
+                exportRowDatas(dataRows, workbook, sheet, headerRows);
+            }
         }
-        
-        //5. 将表格输出到指定的输出流
+
+        // 5. 将表格输出到指定的输出流
         try {
             workbook.write(out);
         } catch (IOException e) {
@@ -169,7 +178,7 @@ public class ExcelExportor<T> {
             map.put(Constants.ERROR_CODE, errorMsg);
             return map;
         }
-       
+
         map.put(Constants.SUCCESS_CODE, "导出成功.");
         return map;
     }
