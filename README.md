@@ -1,5 +1,5 @@
 # ExcelExportor
-Excel导出工具类
+Excel导出工具项目
 
 ## 导出工具项目概述
 1. 对于要导出的实体类，必须用JAVABEAN的形式表示.  
